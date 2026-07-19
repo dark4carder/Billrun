@@ -1,0 +1,6 @@
+{
+  "name": "BillRun",
+  "description": "Fair, AI-powered restaurant receipt splitting and item allocation for groups.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
