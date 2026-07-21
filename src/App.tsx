@@ -341,7 +341,7 @@ export default function App() {
         {/* Footer info/metadata (Anti-AI-slop compliance: Clean, literal labels) */}
         <footer className="py-3 px-5 text-center bg-slate-50 border-t border-slate-100 shrink-0 flex items-center justify-between text-[10px] text-slate-400 print:hidden select-none">
           <span className="font-semibold flex items-center gap-1 text-slate-500">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+            
             Klaudz
           </span>
           <span className="font-mono">v1.0.0</span>
