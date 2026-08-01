@@ -10,11 +10,12 @@ import { ReceiptItem, Participant, ItemCategory } from "../types";
 interface ItemAssignmentProps {
   items: ReceiptItem[];
   participants: Participant[];
+  currency?: string;
   onChange: (updatedItems: ReceiptItem[]) => void;
   onProceed: () => void;
 }
 
-export default function ItemAssignment({ items, participants, onChange, onProceed }: ItemAssignmentProps) {
+export default function ItemAssignment({ items, participants, currency = "MVR", onChange, onProceed }: ItemAssignmentProps) {
   // Currently expanded item ID for assignment
   const [expandedItemId, setExpandedItemId] = useState<string | null>(items[0]?.id || null);
   
@@ -295,7 +296,7 @@ export default function ItemAssignment({ items, participants, onChange, onProcee
                     <div className="flex items-center gap-3 shrink-0">
                       <div className="flex flex-col items-end">
                         <span className="text-sm font-semibold text-slate-900 font-mono">
-                          ${item.totalPrice.toFixed(2)}
+                          {currency} {item.totalPrice.toFixed(2)}
                         </span>
                         {totalQty > 1 && item.category !== "shared_charge" && (
                           <span className={`text-[9px] font-mono font-bold mt-0.5 ${
