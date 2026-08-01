@@ -17,7 +17,7 @@ type AppStage = "UPLOAD" | "CONFIRM_QTY" | "PARTICIPANTS" | "ASSIGN_ITEMS" | "SH
 
 const MOCK_RECEIPT_PAYLOAD = {
   merchant: "Cozy Garden Café",
-  currency: "USD",
+  currency: "MVR",
   subtotal: 48.00,
   tax: 4.50,
   serviceCharge: 6.00,
@@ -308,6 +308,7 @@ export default function App() {
           {stage === "CONFIRM_QTY" && session && (
             <QuantityConfirmation 
               items={session.items} 
+              currency={session.currency}
               onConfirm={handleConfirmQuantities} 
             />
           )}
@@ -324,6 +325,7 @@ export default function App() {
             <ItemAssignment
               items={session.items}
               participants={session.participants}
+              currency={session.currency}
               onChange={handleItemsChange}
               onProceed={() => setStage("SHARED_CHARGES")}
             />
