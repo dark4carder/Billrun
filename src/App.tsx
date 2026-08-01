@@ -116,7 +116,7 @@ export default function App() {
 
     const initialSession: BillSession = {
       merchant: parsedData.merchant || "Restaurant",
-      currency: parsedData.currency || "USD",
+      currency: parsedData.currency || "MVR",
       subtotal: parsedData.subtotal || 0,
       tax: parsedData.tax || 0,
       serviceCharge: parsedData.serviceCharge || 0,
