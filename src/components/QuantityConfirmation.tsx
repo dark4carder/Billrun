@@ -9,10 +9,11 @@ import { ReceiptItem } from "../types";
 
 interface QuantityConfirmationProps {
   items: ReceiptItem[];
+  currency?: string;
   onConfirm: (updatedItems: ReceiptItem[]) => void;
 }
 
-export default function QuantityConfirmation({ items, onConfirm }: QuantityConfirmationProps) {
+export default function QuantityConfirmation({ items, currency = "MVR", onConfirm }: QuantityConfirmationProps) {
   // Store local copy of quantities for items that need confirmation
   const [localItems, setLocalItems] = useState<ReceiptItem[]>(
     items.map(item => ({
@@ -116,7 +117,7 @@ export default function QuantityConfirmation({ items, onConfirm }: QuantityConfi
                   {item.name}
                 </span>
                 <span className="text-xs font-mono text-slate-500 block">
-                  Total: ${(item.totalPrice).toFixed(2)} (${((item.quantity || 1) > 0 ? item.totalPrice / (item.quantity || 1) : item.totalPrice).toFixed(2)} each)
+                  Total: {currency} {(item.totalPrice).toFixed(2)} ({((item.quantity || 1) > 0 ? item.totalPrice / (item.quantity || 1) : item.totalPrice).toFixed(2)} each)
                 </span>
               </div>
 
