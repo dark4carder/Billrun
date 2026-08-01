@@ -145,10 +145,10 @@ export default function SharedChargesConfig({ session, onChangeOverrides, onProc
                   </div>
                   <div className="text-right shrink-0">
                     <span className="text-sm font-bold text-slate-950 font-mono">
-                      ${charge.amount.toFixed(2)}
+                      {session.currency || "MVR"} {charge.amount.toFixed(2)}
                     </span>
                     <span className="text-[10px] font-mono text-slate-400 block pt-0.5">
-                      ${shareAmount.toFixed(2)} each
+                      {session.currency || "MVR"} {shareAmount.toFixed(2)} each
                     </span>
                   </div>
                 </div>
