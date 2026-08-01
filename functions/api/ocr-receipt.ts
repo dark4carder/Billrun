@@ -53,7 +53,7 @@ export async function onRequestPost(context: {
                     {
                       text: `Analyze this restaurant or café receipt and extract its content with extreme precision. 
 Rules:
-1. Extract the merchant name, currency (standard 3-letter code like USD, EUR, SGD, GBP, etc., defaulting to USD if unclear), subtotal, tax, service charge, discount, and grand total.
+1. Extract the merchant name, currency (standard 3-letter code like MVR, USD, EUR, SGD, GBP, etc., defaulting to MVR if unclear or omitted), subtotal, tax, service charge, discount, and grand total.
 2. Extract all line items as an array. For each item:
    - "name": The exact name of the item.
    - "quantity": Set this to the integer quantity ONLY if it is explicitly and clearly stated on the receipt (e.g. '2 Burger', '3x Tea'). If there is NO explicit quantity shown for this line item, set "quantity" to null or 1.
