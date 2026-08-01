@@ -96,15 +96,23 @@ export default function App() {
 
   const handleParsingSuccess = (parsedData: any) => {
     // Generate fresh receipt item structures with ids and empty assignment blocks
-    const receiptItems: ReceiptItem[] = parsedData.items.map((item: any, index: number) => ({
-      id: `item-${index}-${Date.now()}`,
-      name: item.name,
-      quantity: item.quantity,
-      unitPrice: item.unitPrice || item.totalPrice,
-      totalPrice: item.totalPrice,
-      category: item.category || "personal",
-      assigned: {} // Empty assignments to start
-    }));
+    const receiptItems: ReceiptItem[] = (parsedData.items || []).map((item: any, index: number) => {
+      // Normalize quantity: if null, undefined, <= 0 (e.g. -1 returned by Gemini), or NaN, set to null
+      let qty: number | null = item.quantity;
+      if (qty === undefined || qty === null || isNaN(qty) || qty <= 0) {
+        qty = null;
+      }
+
+      return {
+        id: `item-${index}-${Date.now()}`,
+        name: item.name || `Item ${index + 1}`,
+        quantity: qty,
+        unitPrice: item.unitPrice || item.totalPrice || 0,
+        totalPrice: item.totalPrice || 0,
+        category: item.category || "personal",
+        assigned: {} // Empty assignments to start
+      };
+    });
 
     const initialSession: BillSession = {
       merchant: parsedData.merchant || "Restaurant",
@@ -341,7 +349,8 @@ export default function App() {
         {/* Footer info/metadata (Anti-AI-slop compliance: Clean, literal labels) */}
         <footer className="py-3 px-5 text-center bg-slate-50 border-t border-slate-100 shrink-0 flex items-center justify-between text-[10px] text-slate-400 print:hidden select-none">
           <span className="font-semibold flex items-center gap-1 text-slate-500">
-            Klaudz
+           
+            
           </span>
           <span className="font-mono">v1.0.0</span>
         </footer>

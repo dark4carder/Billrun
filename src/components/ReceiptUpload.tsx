@@ -235,7 +235,7 @@ export default function ReceiptUpload({ onParsingSuccess }: ReceiptUploadProps) 
                 <Zap className="w-4 h-4" />
               </div>
               <div className="space-y-0.5">
-                <h4 className="text-xs font-bold text-slate-800">Smart Gemini AI OCR</h4>
+                <h4 className="text-xs font-bold text-slate-800">Smart OCR</h4>
                 <p className="text-[11px] text-slate-500 leading-relaxed">
                   Scans your receipt and instantly extracts items, quantities, and prices without manual entry.
                 </p>

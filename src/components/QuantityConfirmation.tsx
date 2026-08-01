@@ -17,14 +17,14 @@ export default function QuantityConfirmation({ items, onConfirm }: QuantityConfi
   const [localItems, setLocalItems] = useState<ReceiptItem[]>(
     items.map(item => ({
       ...item,
-      // Default null quantity to 1
-      quantity: item.quantity === null ? 1 : item.quantity,
+      // Default null or <= 0 quantity to 1
+      quantity: (item.quantity === null || item.quantity === undefined || item.quantity <= 0) ? 1 : item.quantity,
     }))
   );
 
   // Track which items have been actively confirmed by the user
   const [confirmedItemIds, setConfirmedItemIds] = useState<string[]>(
-    items.filter(item => item.quantity !== null).map(item => item.id)
+    items.filter(item => item.quantity !== null && item.quantity !== undefined && item.quantity > 0).map(item => item.id)
   );
 
   const needsConfirmationItems = items.filter(item => item.quantity === null);

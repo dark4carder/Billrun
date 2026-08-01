@@ -66,43 +66,64 @@ Rules:
 4. Ensure the mathematical relationship holds: grandTotal = subtotal + tax + serviceCharge - discount. Make adjustments if there are minor rounding discrepancies so the numbers reconcile.`,
     };
 
-    // Use gemini-3.5-flash for processing text & image OCR task
-    const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
-      contents: { parts: [imagePart, textPart] },
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            merchant: { type: Type.STRING, description: "Name of the restaurant or venue." },
-            currency: { type: Type.STRING, description: "3-letter currency code (e.g., USD, SGD, EUR)." },
-            subtotal: { type: Type.NUMBER, description: "Subtotal of the receipt." },
-            tax: { type: Type.NUMBER, description: "Tax / VAT / GST amount." },
-            serviceCharge: { type: Type.NUMBER, description: "Service charge or tip amount." },
-            discount: { type: Type.NUMBER, description: "Discount applied." },
-            grandTotal: { type: Type.NUMBER, description: "Grand total of the receipt." },
-            items: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  name: { type: Type.STRING, description: "Item name." },
-                  quantity: { type: Type.INTEGER, description: "Integer quantity ONLY if explicitly written (e.g. 2x, Qty: 3), otherwise must be null." },
-                  unitPrice: { type: Type.NUMBER, description: "Price of one unit." },
-                  totalPrice: { type: Type.NUMBER, description: "Total line item price." },
-                  category: { type: Type.STRING, description: "Must be 'personal', 'shared_food', 'shared_charge', or 'discount'." }
-                },
-                required: ["name", "unitPrice", "totalPrice", "category"]
-              }
-            }
-          },
-          required: ["merchant", "currency", "subtotal", "tax", "serviceCharge", "discount", "grandTotal", "items"]
-        }
-      }
-    });
+    // Fallback model list if the primary model encounters high demand (503/429)
+    const modelsToTry = ["gemini-3.5-flash", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+    let lastError: any = null;
+    let parsedData: any = null;
 
-    const parsedData = JSON.parse(response.text || "{}");
+    for (const modelName of modelsToTry) {
+      try {
+        console.log(`Attempting receipt OCR with Gemini model: ${modelName}`);
+        const response = await ai.models.generateContent({
+          model: modelName,
+          contents: { parts: [imagePart, textPart] },
+          config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                merchant: { type: Type.STRING, description: "Name of the restaurant or venue." },
+                currency: { type: Type.STRING, description: "3-letter currency code (e.g., USD, SGD, EUR)." },
+                subtotal: { type: Type.NUMBER, description: "Subtotal of the receipt." },
+                tax: { type: Type.NUMBER, description: "Tax / VAT / GST amount." },
+                serviceCharge: { type: Type.NUMBER, description: "Service charge or tip amount." },
+                discount: { type: Type.NUMBER, description: "Discount applied." },
+                grandTotal: { type: Type.NUMBER, description: "Grand total of the receipt." },
+                items: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      name: { type: Type.STRING, description: "Item name." },
+                      quantity: { type: Type.INTEGER, description: "Integer quantity ONLY if explicitly written (e.g. 2x, Qty: 3). If unstated or unclear, set to null or 1." },
+                      unitPrice: { type: Type.NUMBER, description: "Price of one unit." },
+                      totalPrice: { type: Type.NUMBER, description: "Total line item price." },
+                      category: { type: Type.STRING, description: "Must be 'personal', 'shared_food', 'shared_charge', or 'discount'." }
+                    },
+                    required: ["name", "unitPrice", "totalPrice", "category"]
+                  }
+                }
+              },
+              required: ["merchant", "currency", "subtotal", "tax", "serviceCharge", "discount", "grandTotal", "items"]
+            }
+          }
+        });
+
+        if (response.text) {
+          parsedData = JSON.parse(response.text);
+          break; // Successfully processed
+        }
+      } catch (err: any) {
+        console.warn(`Gemini model ${modelName} failed/overloaded:`, err?.message || err);
+        lastError = err;
+        // Continue loop to try next fallback model
+      }
+    }
+
+    if (!parsedData) {
+      throw lastError || new Error("All Gemini models are currently busy due to high demand. Please try again in a few moments.");
+    }
+
     return res.json(parsedData);
   } catch (error: any) {
     console.error("Receipt parsing error:", error);

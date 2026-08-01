@@ -49,7 +49,7 @@ export default function ItemAssignment({ items, participants, onChange, onProcee
     const updated = items.map(item => {
       if (item.id === itemId) {
         const currentAssigned = { ...item.assigned };
-        const totalQty = item.quantity || 1;
+        const totalQty = (item.quantity && item.quantity > 0) ? item.quantity : 1;
 
         // For both personal and shared_food, we assign precise integer quantities now!
         currentAssigned[participantId] = Math.max(0, value);
@@ -77,7 +77,7 @@ export default function ItemAssignment({ items, participants, onChange, onProcee
     const item = items.find(i => i.id === itemId);
     if (!item) return;
 
-    const totalQty = item.quantity || 1;
+    const totalQty = (item.quantity && item.quantity > 0) ? item.quantity : 1;
     const assignedQtySum = Object.values(item.assigned).reduce((sum, val) => sum + val, 0);
     const currentAssignedToUser = item.assigned[participantId] || 0;
 
@@ -145,7 +145,7 @@ export default function ItemAssignment({ items, participants, onChange, onProcee
 
   // Helper to check if an item is fully and correctly allocated
   const getItemAllocationStatus = (item: ReceiptItem) => {
-    const totalQty = item.quantity || 1;
+    const totalQty = (item.quantity && item.quantity > 0) ? item.quantity : 1;
     const assignedQtySum = Object.values(item.assigned).reduce((sum, val) => sum + val, 0);
     const remaining = Math.max(0, totalQty - assignedQtySum);
 

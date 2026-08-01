@@ -27,30 +27,36 @@ export async function onRequestPost(context: {
       );
     }
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
+    const modelsToTry = ["gemini-3.5-flash", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+    let parsedText: string | null = null;
+    let lastErrorMsg = "";
+
+    for (const modelName of modelsToTry) {
+      try {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              contents: [
                 {
-                  inlineData: {
-                    mimeType,
-                    data: imageBase64,
-                  },
-                },
-                {
-                  text: `Analyze this restaurant or café receipt and extract its content with extreme precision. 
+                  parts: [
+                    {
+                      inlineData: {
+                        mimeType,
+                        data: imageBase64,
+                      },
+                    },
+                    {
+                      text: `Analyze this restaurant or café receipt and extract its content with extreme precision. 
 Rules:
 1. Extract the merchant name, currency (standard 3-letter code like USD, EUR, SGD, GBP, etc., defaulting to USD if unclear), subtotal, tax, service charge, discount, and grand total.
 2. Extract all line items as an array. For each item:
    - "name": The exact name of the item.
-   - "quantity": Set this to the integer quantity ONLY if it is explicitly and clearly stated on the receipt (e.g. '2 Burger', '3x Tea'). If there is NO explicit quantity shown for this line item, set "quantity" to null.
+   - "quantity": Set this to the integer quantity ONLY if it is explicitly and clearly stated on the receipt (e.g. '2 Burger', '3x Tea'). If there is NO explicit quantity shown for this line item, set "quantity" to null or 1.
    - "unitPrice": The price of a single unit. If quantity is null or 1, unitPrice is equal to the total item price.
    - "totalPrice": The total price for this line item.
    - "category": Categorize the line item as one of these:
@@ -60,54 +66,64 @@ Rules:
      * 'discount': Direct item or general order discounts.
 3. If tax or service charge is listed both as a summary charge and as an individual item, do not double-count them. Prioritize listing summary charges in the primary 'tax' and 'serviceCharge' fields, and keep the individual line items clean.
 4. Ensure the mathematical relationship holds: grandTotal = subtotal + tax + serviceCharge - discount. Make adjustments if there are minor rounding discrepancies so the numbers reconcile.`,
+                    },
+                  ],
                 },
               ],
-            },
-          ],
-          generationConfig: {
-            responseMimeType: "application/json",
-            responseSchema: {
-              type: "OBJECT",
-              properties: {
-                merchant: { type: "STRING", description: "Name of the restaurant or venue." },
-                currency: { type: "STRING", description: "3-letter currency code (e.g., USD, SGD, EUR)." },
-                subtotal: { type: "NUMBER", description: "Subtotal of the receipt." },
-                tax: { type: "NUMBER", description: "Tax / VAT / GST amount." },
-                serviceCharge: { type: "NUMBER", description: "Service charge or tip amount." },
-                discount: { type: "NUMBER", description: "Discount applied." },
-                grandTotal: { type: "NUMBER", description: "Grand total of the receipt." },
-                items: {
-                  type: "ARRAY",
-                  items: {
-                    type: "OBJECT",
-                    properties: {
-                      name: { type: "STRING", description: "Item name." },
-                      quantity: { type: "INTEGER", description: "Integer quantity ONLY if explicitly written (e.g. 2x, Qty: 3), otherwise must be null." },
-                      unitPrice: { type: "NUMBER", description: "Price of one unit." },
-                      totalPrice: { type: "NUMBER", description: "Total line item price." },
-                      category: { type: "STRING", description: "Must be 'personal', 'shared_food', 'shared_charge', or 'discount'." }
-                    },
-                    required: ["name", "unitPrice", "totalPrice", "category"]
-                  }
+              generationConfig: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                  type: "OBJECT",
+                  properties: {
+                    merchant: { type: "STRING", description: "Name of the restaurant or venue." },
+                    currency: { type: "STRING", description: "3-letter currency code (e.g., USD, SGD, EUR)." },
+                    subtotal: { type: "NUMBER", description: "Subtotal of the receipt." },
+                    tax: { type: "NUMBER", description: "Tax / VAT / GST amount." },
+                    serviceCharge: { type: "NUMBER", description: "Service charge or tip amount." },
+                    discount: { type: "NUMBER", description: "Discount applied." },
+                    grandTotal: { type: "NUMBER", description: "Grand total of the receipt." },
+                    items: {
+                      type: "ARRAY",
+                      items: {
+                        type: "OBJECT",
+                        properties: {
+                          name: { type: "STRING", description: "Item name." },
+                          quantity: { type: "INTEGER", description: "Integer quantity ONLY if explicitly written (e.g. 2x, Qty: 3), otherwise set to null or 1." },
+                          unitPrice: { type: "NUMBER", description: "Price of one unit." },
+                          totalPrice: { type: "NUMBER", description: "Total line item price." },
+                          category: { type: "STRING", description: "Must be 'personal', 'shared_food', 'shared_charge', or 'discount'." }
+                        },
+                        required: ["name", "unitPrice", "totalPrice", "category"]
+                      }
+                    }
+                  },
+                  required: ["merchant", "currency", "subtotal", "tax", "serviceCharge", "discount", "grandTotal", "items"]
                 }
-              },
-              required: ["merchant", "currency", "subtotal", "tax", "serviceCharge", "discount", "grandTotal", "items"]
-            }
+              }
+            }),
           }
-        }),
-      }
-    );
+        );
 
-    if (!response.ok) {
-      const errText = await response.text();
-      return new Response(
-        JSON.stringify({ error: `Gemini API returned error: ${errText}` }),
-        { status: response.status, headers }
-      );
+        if (response.ok) {
+          const data = await response.json() as any;
+          parsedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (parsedText) {
+            break; // Success!
+          }
+        } else {
+          lastErrorMsg = await response.text();
+        }
+      } catch (err: any) {
+        lastErrorMsg = err?.message || String(err);
+      }
     }
 
-    const data = await response.json() as any;
-    const parsedText = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+    if (!parsedText) {
+      return new Response(
+        JSON.stringify({ error: `All Gemini OCR models are currently overloaded. Last error: ${lastErrorMsg}` }),
+        { status: 503, headers }
+      );
+    }
 
     return new Response(parsedText, {
       status: 200,
