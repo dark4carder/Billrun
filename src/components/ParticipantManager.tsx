@@ -3,14 +3,22 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from "react";
-import { UserPlus, Trash2, Users, ArrowRight } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { UserPlus, Trash2, Users, ArrowRight, Plus, History, X } from "lucide-react";
 import { Participant } from "../types";
 
 interface ParticipantManagerProps {
   participants: Participant[];
   onChange: (updated: Participant[]) => void;
   onProceed: () => void;
+}
+
+const STORAGE_KEY = "billrun_recent_members";
+
+interface RecentMember {
+  name: string;
+  color?: string;
+  avatar?: string;
 }
 
 const COLOR_PRESETS = [
@@ -31,6 +39,62 @@ export default function ParticipantManager({ participants, onChange, onProceed }
   const [nameInput, setNameInput] = useState("");
   const [selectedColor, setSelectedColor] = useState(COLOR_PRESETS[0]);
   const [selectedEmoji, setSelectedEmoji] = useState(EMOJI_PRESETS[0]);
+  const [recentMembers, setRecentMembers] = useState<RecentMember[]>([]);
+
+  // Load recent members from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          // Normalize string items vs object items
+          const normalized: RecentMember[] = parsed.map(item => 
+            typeof item === "string" ? { name: item } : item
+          ).filter(item => item && typeof item.name === "string" && item.name.trim());
+          setRecentMembers(normalized);
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to load recent members from localStorage", e);
+    }
+  }, []);
+
+  // Save to recent members helper
+  const saveRecentMember = (name: string, color?: string, avatar?: string) => {
+    try {
+      const trimmedName = name.trim();
+      if (!trimmedName) return;
+
+      // Filter out existing duplicate by name (case-insensitive)
+      const existingFiltered = recentMembers.filter(
+        m => m.name.toLowerCase() !== trimmedName.toLowerCase()
+      );
+
+      const updated = [
+        { name: trimmedName, color, avatar },
+        ...existingFiltered
+      ].slice(0, 15); // Keep up to 15 recent members
+
+      setRecentMembers(updated);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    } catch (e) {
+      console.warn("Failed to save recent member to localStorage", e);
+    }
+  };
+
+  const handleRemoveRecentMember = (e: React.MouseEvent, nameToRemove: string) => {
+    e.stopPropagation();
+    try {
+      const updated = recentMembers.filter(
+        m => m.name.toLowerCase() !== nameToRemove.toLowerCase()
+      );
+      setRecentMembers(updated);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    } catch (e) {
+      console.warn("Failed to delete recent member", e);
+    }
+  };
 
   const handleAddParticipant = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -53,6 +117,7 @@ export default function ParticipantManager({ participants, onChange, onProceed }
     };
 
     onChange([...participants, newParticipant]);
+    saveRecentMember(trimmedName, selectedColor, selectedEmoji);
     setNameInput("");
     
     // Auto-rotate color and emoji presets for easy rapid entry
@@ -62,9 +127,41 @@ export default function ParticipantManager({ participants, onChange, onProceed }
     setSelectedEmoji(EMOJI_PRESETS[nextEmojiIdx]);
   };
 
+  const handleAddRecentParticipant = (recent: RecentMember) => {
+    // Check if already in active participants list
+    if (participants.some(p => p.name.toLowerCase() === recent.name.toLowerCase())) {
+      return;
+    }
+
+    const initials = recent.name
+      .split(" ")
+      .map(part => part[0])
+      .join("")
+      .substring(0, 2)
+      .toUpperCase();
+
+    const colorToUse = recent.color || COLOR_PRESETS[participants.length % COLOR_PRESETS.length];
+    const avatarToUse = recent.avatar || initials || "👤";
+
+    const newParticipant: Participant = {
+      id: `p-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      name: recent.name,
+      color: colorToUse,
+      avatar: avatarToUse
+    };
+
+    onChange([...participants, newParticipant]);
+    saveRecentMember(recent.name, colorToUse, avatarToUse);
+  };
+
   const handleRemoveParticipant = (id: string) => {
     onChange(participants.filter(p => p.id !== id));
   };
+
+  // Filter recent suggestions not yet added in current session
+  const availableRecentSuggestions = recentMembers.filter(
+    rm => !participants.some(p => p.name.toLowerCase() === rm.name.toLowerCase())
+  );
 
   return (
     <div id="participant-manager-card" className="space-y-6">
@@ -140,6 +237,40 @@ export default function ParticipantManager({ participants, onChange, onProceed }
               </div>
             )}
           </form>
+
+          {/* Recent Members Suggestions from browser cache */}
+          {availableRecentSuggestions.length > 0 && (
+            <div id="recent-members-section" className="pt-2 space-y-2">
+              <div className="flex items-center justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider px-1">
+                <span className="flex items-center gap-1 text-slate-500">
+                  <History className="w-3.5 h-3.5 text-slate-400" />
+                  Recent Members
+                </span>
+                <span className="text-[10px] text-slate-400 font-normal">Tap to quick-add</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {availableRecentSuggestions.map((recent) => (
+                  <div
+                    key={recent.name}
+                    onClick={() => handleAddRecentParticipant(recent)}
+                    className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-emerald-50 hover:border-emerald-200 text-xs font-medium text-slate-700 hover:text-emerald-800 transition-all cursor-pointer shadow-none select-none"
+                  >
+                    <span className="text-xs">{recent.avatar || "👤"}</span>
+                    <span>{recent.name}</span>
+                    <Plus className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-600 ml-0.5" />
+                    <button
+                      type="button"
+                      onClick={(e) => handleRemoveRecentMember(e, recent.name)}
+                      title="Remove from recent list"
+                      className="p-0.5 rounded-full hover:bg-rose-100 text-slate-300 hover:text-rose-600 transition-all border-0 bg-transparent ml-1"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right column: Participants List */}
