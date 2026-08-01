@@ -32,22 +32,22 @@ export default function SummaryResults({ session, onReset, onGoBack }: SummaryRe
       
       // Personal items
       p.personalItems.forEach(item => {
-        text += `  • ${item.name} (x${item.assignedQty}): $${item.shareCost.toFixed(2)}\n`;
+        text += `  • ${item.name} (x${item.assignedQty}): ${session.currency} ${item.shareCost.toFixed(2)}\n`;
       });
 
       // Shared food items
       p.sharedFoodItems.forEach(item => {
-        text += `  • [Shared] ${item.name}: $${item.shareCost.toFixed(2)}\n`;
+        text += `  • [Shared] ${item.name}: ${session.currency} ${item.shareCost.toFixed(2)}\n`;
       });
 
       // Shared charges breakdown
       p.sharedChargesBreakdown.forEach(charge => {
-        text += `  • [Fee] ${charge.name}: $${charge.cost.toFixed(2)}\n`;
+        text += `  • [Fee] ${charge.name}: ${session.currency} ${charge.cost.toFixed(2)}\n`;
       });
 
       // Discount
       if (p.discountBenefit > 0) {
-        text += `  • [Discount] Proportional: -$${p.discountBenefit.toFixed(2)}\n`;
+        text += `  • [Discount] Proportional: -${session.currency} ${p.discountBenefit.toFixed(2)}\n`;
       }
     });
 
@@ -126,15 +126,15 @@ export default function SummaryResults({ session, onReset, onGoBack }: SummaryRe
             <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-850 text-xs">
               <div>
                 <span className="text-slate-400 block text-[9px] uppercase tracking-wider">Subtotal</span>
-                <span className="font-mono font-semibold">${session.subtotal.toFixed(2)}</span>
+                <span className="font-mono font-semibold">{session.currency} {session.subtotal.toFixed(2)}</span>
               </div>
               <div>
                 <span className="text-slate-400 block text-[9px] uppercase tracking-wider">Fees & Tax</span>
-                <span className="font-mono font-semibold">${(session.tax + session.serviceCharge).toFixed(2)}</span>
+                <span className="font-mono font-semibold">{session.currency} {(session.tax + session.serviceCharge).toFixed(2)}</span>
               </div>
               <div>
                 <span className="text-slate-400 block text-[9px] uppercase tracking-wider">Discount</span>
-                <span className="font-mono font-semibold text-emerald-400">-${session.discount.toFixed(2)}</span>
+                <span className="font-mono font-semibold text-emerald-400">-{session.currency} {session.discount.toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -232,28 +232,28 @@ export default function SummaryResults({ session, onReset, onGoBack }: SummaryRe
                     {p.personalItems.map((item, idx) => (
                       <div key={`p-${idx}`} className="flex justify-between text-slate-600">
                         <span className="truncate max-w-[200px]">{item.name} (x{item.assignedQty})</span>
-                        <span className="font-mono text-slate-500">${item.shareCost.toFixed(2)}</span>
+                        <span className="font-mono text-slate-500">{session.currency} {item.shareCost.toFixed(2)}</span>
                       </div>
                     ))}
 
                     {p.sharedFoodItems.map((item, idx) => (
                       <div key={`s-${idx}`} className="flex justify-between text-slate-600 italic">
                         <span className="truncate max-w-[200px]">[Shared] {item.name}</span>
-                        <span className="font-mono text-slate-500">${item.shareCost.toFixed(2)}</span>
+                        <span className="font-mono text-slate-500">{session.currency} {item.shareCost.toFixed(2)}</span>
                       </div>
                     ))}
 
                     {p.sharedChargesBreakdown.map((charge, idx) => (
                       <div key={`c-${idx}`} className="flex justify-between text-slate-500 text-[11px]">
                         <span>[Fee] {charge.name}</span>
-                        <span className="font-mono">${charge.cost.toFixed(2)}</span>
+                        <span className="font-mono">{session.currency} {charge.cost.toFixed(2)}</span>
                       </div>
                     ))}
 
                     {p.discountBenefit > 0 && (
                       <div className="flex justify-between text-emerald-600 text-[11px] font-medium">
                         <span>[Discount Benefit]</span>
-                        <span className="font-mono">-${p.discountBenefit.toFixed(2)}</span>
+                        <span className="font-mono">-{session.currency} {p.discountBenefit.toFixed(2)}</span>
                       </div>
                     )}
                   </div>
