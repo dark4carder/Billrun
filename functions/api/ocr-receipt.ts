@@ -59,7 +59,7 @@ export async function onRequestPost(context: {
                     {
                       text: `Analyze this restaurant or café receipt and extract its content with extreme precision. 
 Rules:
-1. Extract the merchant name, currency (standard 3-letter code like MVR, USD, EUR, SGD, GBP, etc., defaulting to MVR if unclear or omitted), subtotal, tax, service charge, discount, and grand total.
+1. Extract the merchant name, currency (standard 3-letter code). MUST default strictly to "MVR" if the receipt uses "MVR", "Rf", "Rf.", "RS", "Rs.", or if no explicit currency symbol is printed. Only output other codes (e.g. USD, EUR, SGD, GBP, LKR, INR) if explicitly printed as that code on the receipt.
 2. Extract all line items as an array. For each item:
    - "name": The exact name of the item.
    - "quantity": Set this to the integer quantity ONLY if it is explicitly and clearly stated on the receipt (e.g. '2 Burger', '3x Tea'). If there is NO explicit quantity shown for this line item, set "quantity" to null or 1.
@@ -82,7 +82,7 @@ Rules:
                   type: "OBJECT",
                   properties: {
                     merchant: { type: "STRING", description: "Name of the restaurant or venue." },
-                    currency: { type: "STRING", description: "3-letter currency code (e.g., USD, SGD, EUR)." },
+                    currency: { type: "STRING", description: "3-letter currency code (e.g., MVR, USD, EUR, SGD). Default to 'MVR' if 'Rs.', 'Rf', or no code is present." },
                     subtotal: { type: "NUMBER", description: "Subtotal of the receipt." },
                     tax: { type: "NUMBER", description: "Tax / VAT / GST amount." },
                     serviceCharge: { type: "NUMBER", description: "Service charge or tip amount." },
