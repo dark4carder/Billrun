@@ -51,7 +51,7 @@ app.post("/api/ocr-receipt", async (req, res) => {
     const textPart = {
       text: `Analyze this restaurant or café receipt and extract its content with extreme precision. 
 Rules:
-1. Extract the merchant name, currency (standard 3-letter code like MVR, USD, EUR, SGD, GBP, etc., defaulting to MVR if unclear or omitted), subtotal, tax, service charge, discount, and grand total.
+1. Extract the merchant name, currency (standard 3-letter code). MUST default strictly to "MVR" if the receipt uses "MVR", "Rf", "Rf.", "RS", "Rs.", or if no explicit currency symbol is printed. Only use other codes (e.g. USD, EUR, SGD, GBP, LKR, INR) if explicitly spelled out as that specific code on the receipt.
 2. Extract all line items as an array. For each item:
    - "name": The exact name of the item.
    - "quantity": Set this to the integer quantity ONLY if it is explicitly and clearly stated on the receipt (e.g. '2 Burger', '3x Tea'). If there is NO explicit quantity shown for this line item, set "quantity" to null.
@@ -89,7 +89,7 @@ Rules:
               type: Type.OBJECT,
               properties: {
                 merchant: { type: Type.STRING, description: "Name of the restaurant or venue." },
-                currency: { type: Type.STRING, description: "3-letter currency code (e.g., USD, SGD, EUR)." },
+                currency: { type: Type.STRING, description: "3-letter currency code (e.g., MVR, USD, EUR, SGD). Default to 'MVR' if 'Rs.', 'Rf', or no code is present." },
                 subtotal: { type: Type.NUMBER, description: "Subtotal of the receipt." },
                 tax: { type: Type.NUMBER, description: "Tax / VAT / GST amount." },
                 serviceCharge: { type: Type.NUMBER, description: "Service charge or tip amount." },
